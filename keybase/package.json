@@ -1,0 +1,14 @@
+{
+  "name": "keybase",
+  "version": "1.0.0",
+  "description": "Simple http-api for computercraft projects. Will run on a raspi in my case",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
