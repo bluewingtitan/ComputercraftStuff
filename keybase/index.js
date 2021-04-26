@@ -30,6 +30,7 @@ app.post('/set/:item', (request, response) => {
     response.sendStatus(200)
 })
 
-app.listen(34200, () => {
-    console.log("App running on port 34200")
+// use heroku enviroment port.
+app.listen(process.env.PORT, () => {
+    console.log("App running on port " + process.env.PORT)
 })
