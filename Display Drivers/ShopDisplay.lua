@@ -1,12 +1,11 @@
-term.write("Monitor location: ")
-side = io.read()
-term.write("Display Text: ")
-text = io.read()
-term.write("Font Color: ")
-textColor = io.read()
-term.write("speed: ")
-scrollSpeed = io.read()
- 
+-- configs
+side = "left"
+text = "The text!"
+textColor = colours.lime
+scrollSpeed = 2
+
+-- don't edit any of the following.
+
 function makeScrollingText(side,text,tc,speed)
     mon = peripheral.wrap(side)
     w,h = mon.getSize()

@@ -10,7 +10,7 @@ args = {...}
 
 
 
-function WaitForInsert()
+local function waitForInsert()
     -- 1. Wait for Something to be inserted
     local diskIsThere = false
 
@@ -19,7 +19,4 @@ function WaitForInsert()
         diskIsThere = disk.isPresent(args[1])
     end
 end
-
-
-
 
