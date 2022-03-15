@@ -4,6 +4,11 @@
     "term",
     "peripheral",
     "fs",
-    "rs"
+    "rs",
+    "window",
+    "colors",
+    "disk",
+    "write",
+    "sleep"
   ]
 }

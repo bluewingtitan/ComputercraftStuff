@@ -1,0 +1,11 @@
+{
+    "Lua.diagnostics.globals": [
+        "peripheral",
+        "rs",
+        "rednet",
+        "write",
+        "textutils",
+        "fs",
+        "parallel"
+    ]
+}
