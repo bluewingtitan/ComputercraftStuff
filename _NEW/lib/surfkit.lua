@@ -1,11 +1,15 @@
 -- a simple library for creating basic servers.
 
 require "find"
+local expect = require "cc.expect"
+local expect, field = expect.expect, expect.field
 
 surfkit = {}
 
 
 function surfkit.create_empty_instance(protocol, hostname)
+    expect(1, protocol, "string")
+    expect(2, hostname, "string")
     local instance = {
         protocol = protocol,
         hostname = hostname
@@ -61,6 +65,10 @@ function surfkit.create_empty_instance(protocol, hostname)
     
     instance._afterListen = function (self)
         print("Please define your own _afterListen(self)!")
+    end
+
+    instance.stop = function (self)
+        self.running = false
     end
 
     return instance

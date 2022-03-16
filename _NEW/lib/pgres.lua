@@ -1,26 +1,8 @@
 -- pgres/pre-gres, a simple key/value store for computercraft with client/server-architecture
 
--------------------------
--- fake imported libs: --
----------------------------------------------------------------------------
--- replace these with the requires that are commented out in production. --
----------------------------------------------------------------------------
-findside = {
-    _active = {}
-}
 
-function findside.modem()
-    return findside.find("modem")
-end
-
-function findside.find(type)
-    for _, side in pairs(rs.getSides()) do
-        if peripheral.isPresent(side) and peripheral.getType(side) == type and findside._active[side] == nil or findside._active[side] == false then return side end
-    end
-end
-
-
--- require "util.find"
+require "find"
+require "surfkit"
 local expect = require "cc.expect"
 local expect, field = expect.expect, expect.field
 
@@ -29,24 +11,22 @@ pgres = {
     version = 1
 }
 
-function pgres.open(path, hostname, password, modem)
+function pgres.open(path, hostname, password, whitelist)
     expect(1, path, "string")
     expect(2, hostname, "string")
     expect(3, password, "string", "nil")
-    expect(4, modem, "string", "nil")
 
-    local instance = {
-        running = false,
-        path = path,
-        hostname = hostname,
-        sessions = {},
-        password = password,
-        version = pgres.version,
-        protocol = pgres.protocol
-    }
+    local instance = surfkit.create_empty_instance(pgres.protocol, hostname)
+    instance.running = false
+    instance.path = path
+    instance.password = password
+    instance.version = pgres.version
 
-    if modem ~= nil then
-        instance.modem = modem
+    if whitelist then
+        instance.whitelist = {}
+        for key, value in pairs(whitelist) do
+            instance.whitelist[value] = true
+        end
     end
 
     instance._getTime = function ()
@@ -86,12 +66,14 @@ function pgres.open(path, hostname, password, modem)
         file.close()
     end
 
-    instance._receive = function (self)
-        local id, message = rednet.receive(self.protocol)
-        return id, message
-    end
-
     instance._handle = function (self, id, message)
+        if self.whitelist then
+            if not whitelist[id] then
+                -- we don't want attackers of closed systems to even know the system would technically be functional => no answer, no log.
+                return
+            end
+        end
+
         local key = message["key"]
         local method = message["method"]
         if not key or not method then
@@ -158,34 +140,7 @@ function pgres.open(path, hostname, password, modem)
         }
     end
 
-    instance.listen = function (self)
-        -- open rednet
-
-        if not rednet.isOpen() then
-                if self.modem == nil then
-                    local side = findside.modem()
-                    if side == nil then
-                        error("Was not able to find any modem that is up for use.")
-                    end
-                    self.modem = side
-                end
-            rednet.open(self.modem)
-        end
-
-
-        self:_load()
-
-        if self.data["_LATEST_VERSION"].d ~= self.version then
-            -- UPGRADES OF DATA DUE TO BIGGER VERSION CHANGES WILL GO IN HERE.
-            print("upgrade db-version from "..self.data["_LATEST_VERSION"].d.." to "..self.version)
-            self.data["_LATEST_VERSION"] = self:_createEntry(self.version, true)
-            self:_save()
-        end
-
-
-        self.running = true
-        rednet.host(self.protocol, self.hostname)
-
+    instance._beforeListen = function (self)
         print("pgres-server by bluewingtitan started.")
         print("version: "..self.protocol)
         print("hostname: "..self.hostname)
@@ -194,26 +149,10 @@ function pgres.open(path, hostname, password, modem)
         if self.password ~= nil then
             print("Service is password protected!")
         end
-
-        self._id, self._msg = self:_receive()
-        while self.running do
-            parallel.waitForAll(
-                function ()
-                    self.__id, self.__msg = self:_receive()
-                end,
-                function ()
-                    self:_handle(self._id, self._msg)
-                end
-            )
-            self._id = self.__id
-            self._msg = self.__msg
-        end
-        rednet.unhost(self.protocol, self.hostname)
-        print("pgres-server by bluewingtitan stopped.")
     end
 
-    instance.stop = function (self)
-        self.running = false
+    instance._afterListen = function (self)
+        print("pgres-server by bluewingtitan stopped.")
     end
 
 
@@ -320,13 +259,14 @@ function pgres.connect(hostname, password)
         return result
     end
 
+    instance.test = function ()
+        local result = instance:get("_LATEST_VERSION")
 
-    -- check connection
-    local result = instance:get("_LATEST_VERSION")
+        if not result or not result.data then
+            return false
+        end
 
-    if not result or not result.data then
-        print("Connection test failed.")
+        return true
     end
-
     return instance
 end
